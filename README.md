@@ -1,6 +1,6 @@
 # Bitcoin 24-Hour Multi-Horizon Price Forecasting with Custom Seq2Seq LSTM
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zakski-bit/bitcoin-seq2seq-forecasting/blob/main/bitcoin_seq2seq_forecasting.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1dHQX7Zh0oi9HBnhiZxZ1-blRG87GEFjz?usp=sharing)
 [![Vercel Live Demo](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel)](https://bitcoin-seq2seq-forecasting-41sf.vercel.app/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15%2B-orange.svg)](https://tensorflow.org/)
@@ -16,7 +16,7 @@
 ## 🚀 Live Demo & Interactive Showcase
 
 * **Live Web App (Vercel)**: 👉 [**https://bitcoin-seq2seq-forecasting-41sf.vercel.app**](https://bitcoin-seq2seq-forecasting-41sf.vercel.app)
-* **Interactive Notebook**: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zakski-bit/bitcoin-seq2seq-forecasting/blob/main/bitcoin_seq2seq_forecasting.ipynb)
+* **Interactive Notebook (Colab)**: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1dHQX7Zh0oi9HBnhiZxZ1-blRG87GEFjz?usp=sharing)
 
 ---
 
