@@ -1,0 +1,8 @@
+models/
+*.keras
+notebooks/
+Nama_Submission_Akhir_DLTM.ipynb
+bitcoin_seq2seq_forecasting.ipynb
+requirements-ml.txt
+src/generate_final_submission.py
+src/export_web_data.py

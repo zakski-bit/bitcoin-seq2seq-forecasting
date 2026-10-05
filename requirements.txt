@@ -1,8 +1,2 @@
-tensorflow>=2.15.0
-keras>=3.0.0
-numpy>=1.23.0
-pandas>=1.5.0
-scikit-learn>=1.2.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-statsmodels>=0.14.0
+# Machine Learning dependencies are located in requirements-ml.txt
+# (Kept lightweight here for fast Vercel serverless deployment)
