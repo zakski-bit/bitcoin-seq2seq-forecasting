@@ -1,4 +1,12 @@
 {
   "version": 2,
-  "cleanUrls": true
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/api", "dest": "/api/index.py" },
+    { "src": "/data.js", "dest": "/data.js" },
+    { "src": "/app.js", "dest": "/app.js" },
+    { "src": "/data/(.*)", "dest": "/data/$1" },
+    { "src": "/index.html", "dest": "/index.html" },
+    { "src": "/", "dest": "/index.html" }
+  ]
 }

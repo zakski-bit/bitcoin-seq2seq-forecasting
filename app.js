@@ -16,9 +16,13 @@ const formatUSD = (val) => {
 // Initialize Application
 async function initApp() {
   try {
-    const response = await fetch('data/forecast_data.json');
-    if (!response.ok) throw new Error('Gagal memuat data prediksi');
-    forecastData = await response.json();
+    if (window.FORECAST_DATA) {
+      forecastData = window.FORECAST_DATA;
+    } else {
+      const response = await fetch('data/forecast_data.json');
+      if (!response.ok) throw new Error('Gagal memuat data prediksi');
+      forecastData = await response.json();
+    }
 
     // Render Scenarios
     renderScenarioButtons();
