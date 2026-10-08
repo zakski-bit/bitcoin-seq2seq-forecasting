@@ -1,4 +1,4 @@
-// BTC-Forecaster AI - Interactive Frontend Controller
+// BTC-CORE-RPC // Cypherpunk Terminal Controller
 
 let forecastData = null;
 let currentScenario = null;
@@ -20,85 +20,82 @@ async function initApp() {
       forecastData = window.FORECAST_DATA;
     } else {
       const response = await fetch('data/forecast_data.json');
-      if (!response.ok) throw new Error('Gagal memuat data prediksi');
+      if (!response.ok) throw new Error('Failed to load forecast data stream');
       forecastData = await response.json();
     }
 
-    // Render Scenarios
-    renderScenarioButtons();
+    // Default to scenario 1 (Primary Benchmark)
+    switchScenario('scenario_1');
 
-    // Select default scenario (primary test window)
-    selectScenario(forecastData.scenarios[0].id);
+    // Register Keyboard Shortcuts for authentic terminal navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '1') switchScenario('scenario_1');
+      if (e.key === '2') switchScenario('scenario_2');
+      if (e.key === '3') switchScenario('scenario_3');
+    });
 
-    // Setup chart toggles
-    setupToggles();
   } catch (err) {
-    console.error('Error loading data:', err);
-    document.getElementById('scenario-description-text').innerHTML =
-      '<span class="text-rose-400 font-semibold">Gagal memuat dataset prediksi: ' + err.message + '</span>';
+    console.error('Fatal initialization error:', err);
+    const desc = document.getElementById('scenario-desc');
+    if (desc) {
+      desc.innerHTML = `<span class="text-term-red">[ERROR] Could not connect to RPC telemetry: ${err.message}</span>`;
+    }
   }
 }
 
-// Render Scenario Selector Buttons
-function renderScenarioButtons() {
-  const container = document.getElementById('scenario-buttons');
-  container.innerHTML = '';
-
-  forecastData.scenarios.forEach((sc, idx) => {
-    const btn = document.createElement('button');
-    btn.id = `btn-${sc.id}`;
-    btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 ${
-      idx === 0
-        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
-        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-    }`;
-    btn.innerHTML = `<span>${sc.name}</span>`;
-    btn.addEventListener('click', () => selectScenario(sc.id));
-    container.appendChild(btn);
-  });
-}
-
-// Select and Activate Scenario
-function selectScenario(scenarioId) {
+// Switch Active Forecast Scenario
+function switchScenario(scenarioId) {
+  if (!forecastData) return;
   currentScenario = forecastData.scenarios.find((s) => s.id === scenarioId);
   if (!currentScenario) return;
 
-  // Update button active state
-  forecastData.scenarios.forEach((sc) => {
-    const btn = document.getElementById(`btn-${sc.id}`);
+  // Update Button States
+  ['scenario_1', 'scenario_2', 'scenario_3'].forEach((id, idx) => {
+    const btn = document.getElementById(`btn-sc${idx + 1}`);
     if (btn) {
-      if (sc.id === scenarioId) {
-        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-sky-500 text-white shadow-lg shadow-sky-500/25 transition';
+      if (id === scenarioId) {
+        btn.className = 'px-2.5 py-1 text-xs font-mono font-bold border border-term-cyan bg-term-cyan/20 text-term-cyan transition';
       } else {
-        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition';
+        btn.className = 'px-2.5 py-1 text-xs font-mono border border-term-borderDim bg-[#0a0f18] hover:border-term-cyan/60 text-slate-400 transition';
       }
     }
   });
 
-  // Update info boxes
-  document.getElementById('scenario-description-text').innerHTML = `
-    <strong>${currentScenario.name} (${currentScenario.tag}):</strong> ${currentScenario.description}
-  `;
+  // Update Telemetry Header
+  const nameEl = document.getElementById('scenario-name');
+  const descEl = document.getElementById('scenario-desc');
+  if (nameEl) nameEl.textContent = `${currentScenario.name} [${currentScenario.tag}]`;
+  if (descEl) descEl.textContent = currentScenario.description;
 
-  document.getElementById('scenario-summary-badge').innerHTML = `
-    <span class="text-sky-400 font-bold">Seq2Seq MAE: $${currentScenario.metrics.seq2seq_mae_usd}</span> &bull; 
-    <span class="text-purple-400">Baseline MAE: $${currentScenario.metrics.baseline_mae_usd}</span>
-  `;
+  // Update Dynamic KPI values
+  const kpiBase = document.getElementById('kpi-base-mae');
+  const kpiSeq = document.getElementById('kpi-seq-mae');
+  if (kpiBase && kpiSeq) {
+    kpiBase.textContent = `$${currentScenario.metrics.baseline_mae_usd.toFixed(2)}`;
+    kpiSeq.textContent = `$${currentScenario.metrics.seq2seq_mae_usd.toFixed(2)}`;
+  }
 
-  // Render Chart
-  renderChart();
-
-  // Render Table
-  renderTable();
+  // Render Charts & Matrix
+  renderTerminalChart();
+  renderMatrixTable();
 }
 
-// Render Chart.js
-function renderChart() {
-  const ctx = document.getElementById('forecastChart').getContext('2d');
-  const showHistory = document.getElementById('toggle-history').checked;
-  const showActual = document.getElementById('toggle-actual').checked;
-  const showSeq2Seq = document.getElementById('toggle-seq2seq').checked;
-  const showBaseline = document.getElementById('toggle-baseline').checked;
+// Update Visibility from Checkboxes
+function updateChartVisibility() {
+  if (!chartInstance) return;
+  renderTerminalChart();
+}
+
+// Render High-Contrast Terminal Chart
+function renderTerminalChart() {
+  const canvas = document.getElementById('terminalChart');
+  if (!canvas || !currentScenario) return;
+  const ctx = canvas.getContext('2d');
+
+  const showActual = document.getElementById('chk-actual')?.checked ?? true;
+  const showSeq2Seq = document.getElementById('chk-seq2seq')?.checked ?? true;
+  const showBaseline = document.getElementById('chk-baseline')?.checked ?? true;
+  const showHistory = document.getElementById('chk-history')?.checked ?? true;
 
   const hist = currentScenario.historical;
   const fore = currentScenario.forecast;
@@ -111,11 +108,10 @@ function renderChart() {
   if (showHistory) {
     labels = [...hist.dates, ...fore.dates];
     actualData = [...hist.prices, ...fore.actual_usd];
-    // For forecast lines, prepend null for historical period
+
     const nullPads = new Array(hist.prices.length).fill(null);
-    // Connect seamless starting point at t0 (last historical point)
-    const t0 = hist.prices[hist.prices.length - 1];
-    nullPads[nullPads.length - 1] = t0;
+    // Anchor t0 to last historical point for continuous step progression
+    nullPads[nullPads.length - 1] = hist.prices[hist.prices.length - 1];
 
     seq2seqData = [...nullPads, ...fore.seq2seq_usd];
     baselineData = [...nullPads, ...fore.baseline_usd];
@@ -128,49 +124,54 @@ function renderChart() {
 
   const datasets = [];
 
+  // Ground Truth (Actual Price) - Neon Green
   if (showActual) {
     datasets.push({
-      label: 'Data Aktual (Ground Truth)',
+      label: 'ACTUAL_GROUND_TRUTH',
       data: actualData,
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.08)',
-      borderWidth: 2.5,
+      borderColor: '#00ff66',
+      backgroundColor: 'rgba(0, 255, 102, 0.04)',
+      borderWidth: 2,
       pointRadius: (ctx) => {
-        // Larger point on the forecast portion
         const idx = ctx.dataIndex;
         if (showHistory && idx < hist.prices.length) return 0;
-        return 3.5;
+        return 3;
       },
-      pointHoverRadius: 6,
+      pointHoverRadius: 5,
+      pointBackgroundColor: '#00ff66',
       fill: true,
-      tension: 0.2
+      tension: 0.1
     });
   }
 
+  // Seq2Seq Autoregressive - Neon Cyan
   if (showSeq2Seq) {
     datasets.push({
-      label: 'Prediksi Seq2Seq Autoregressive',
+      label: 'SEQ2SEQ_AUTOREGRESSIVE',
       data: seq2seqData,
-      borderColor: '#38bdf8',
+      borderColor: '#00e5ff',
       borderDash: [5, 4],
       backgroundColor: 'transparent',
-      borderWidth: 2.5,
-      pointRadius: 4,
+      borderWidth: 2.2,
+      pointRadius: 3.5,
       pointHoverRadius: 6,
-      tension: 0.2
+      pointBackgroundColor: '#00e5ff',
+      tension: 0.15
     });
   }
 
+  // Baseline LSTM - Vivid Magenta/Purple
   if (showBaseline) {
     datasets.push({
-      label: 'Prediksi Baseline LSTM',
+      label: 'BASELINE_LSTM_DIRECT',
       data: baselineData,
-      borderColor: '#a855f7',
+      borderColor: '#d946ef',
       borderDash: [2, 2],
       backgroundColor: 'transparent',
-      borderWidth: 1.8,
-      pointRadius: 3,
+      borderWidth: 1.5,
+      pointRadius: 2.5,
       pointHoverRadius: 5,
+      pointBackgroundColor: '#d946ef',
       tension: 0.2
     });
   }
@@ -188,26 +189,30 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 300 },
       interaction: {
         mode: 'index',
         intersect: false
       },
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
-          backgroundColor: '#111827',
-          titleColor: '#f3f4f6',
-          bodyColor: '#e5e7eb',
-          borderColor: '#374151',
+          backgroundColor: '#060a12',
+          titleColor: '#00e5ff',
+          bodyColor: '#f8fafc',
+          borderColor: '#0e3a47',
           borderWidth: 1,
-          padding: 12,
+          padding: 10,
+          titleFont: { family: 'JetBrains Mono', size: 11, weight: 'bold' },
+          bodyFont: { family: 'JetBrains Mono', size: 11 },
           callbacks: {
+            title: function (items) {
+              return `[ STEP // ${items[0].label} ]`;
+            },
             label: function (context) {
               const val = context.raw;
               if (val === null || val === undefined) return null;
-              return ` ${context.dataset.label}: ${formatUSD(val)}`;
+              return `> ${context.dataset.label.padEnd(23, ' ')} : ${formatUSD(val)}`;
             }
           }
         }
@@ -215,26 +220,28 @@ function renderChart() {
       scales: {
         x: {
           grid: {
-            color: 'rgba(55, 65, 81, 0.35)',
-            drawBorder: false
+            color: 'rgba(14, 58, 71, 0.4)',
+            drawBorder: true,
+            borderColor: '#0e3a47'
           },
           ticks: {
-            color: '#9ca3af',
+            color: '#64748b',
             maxTicksLimit: 14,
-            font: { size: 10 }
+            font: { family: 'JetBrains Mono', size: 10 }
           }
         },
         y: {
           grid: {
-            color: 'rgba(55, 65, 81, 0.35)',
-            drawBorder: false
+            color: 'rgba(14, 58, 71, 0.4)',
+            drawBorder: true,
+            borderColor: '#0e3a47'
           },
           ticks: {
-            color: '#9ca3af',
+            color: '#00e5ff',
             callback: function (val) {
               return '$' + val.toLocaleString();
             },
-            font: { size: 10 }
+            font: { family: 'JetBrains Mono', size: 10 }
           }
         }
       }
@@ -242,16 +249,17 @@ function renderChart() {
   });
 }
 
-// Render Table
-function renderTable() {
-  const tbody = document.getElementById('table-body');
+// Render Hour-by-Hour Evaluation Matrix Table
+function renderMatrixTable() {
+  const tbody = document.getElementById('matrix-tbody');
+  if (!tbody || !currentScenario) return;
   tbody.innerHTML = '';
 
   const fore = currentScenario.forecast;
 
   for (let i = 0; i < fore.hours.length; i++) {
     const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-800/40 transition';
+    tr.className = 'hover:bg-[#0c1422] transition border-b border-term-borderDim/20';
 
     const actual = fore.actual_usd[i];
     const seq = fore.seq2seq_usd[i];
@@ -259,35 +267,21 @@ function renderTable() {
     const base = fore.baseline_usd[i];
     const diffBase = fore.diff_baseline_usd[i];
 
+    // Status indicator
+    const seqColorClass = diffSeq < 100 ? 'text-term-green font-bold' : 'text-term-cyan';
+
     tr.innerHTML = `
-      <td class="py-2.5 px-4 font-semibold text-slate-300">${fore.hours[i]}</td>
-      <td class="py-2.5 px-4 text-slate-400 text-xs">${fore.dates[i]}</td>
-      <td class="py-2.5 px-4 text-emerald-400 font-semibold">${formatUSD(actual)}</td>
-      <td class="py-2.5 px-4 text-sky-400 font-semibold">${formatUSD(seq)}</td>
-      <td class="py-2.5 px-4">
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-sky-500/10 text-sky-300">
-          $${diffSeq.toFixed(2)}
-        </span>
-      </td>
-      <td class="py-2.5 px-4 text-purple-400">${formatUSD(base)}</td>
-      <td class="py-2.5 px-4">
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-300">
-          $${diffBase.toFixed(2)}
-        </span>
-      </td>
+      <td class="py-1.5 px-3 border-r border-term-borderDim/40 font-bold text-slate-300">${fore.hours[i]}</td>
+      <td class="py-1.5 px-3 border-r border-term-borderDim/40 text-slate-400">${fore.dates[i]}</td>
+      <td class="py-1.5 px-3 border-r border-term-borderDim/40 text-term-green font-bold">${formatUSD(actual)}</td>
+      <td class="py-1.5 px-3 border-r border-term-borderDim/40 text-term-cyan font-bold">${formatUSD(seq)}</td>
+      <td class="py-1.5 px-3 border-r border-term-borderDim/40 ${seqColorClass}">$${diffSeq.toFixed(2)}</td>
+      <td class="py-1.5 px-3 border-r border-term-borderDim/40 text-term-purple">${formatUSD(base)}</td>
+      <td class="py-1.5 px-3 text-term-purple/80">$${diffBase.toFixed(2)}</td>
     `;
     tbody.appendChild(tr);
   }
 }
 
-// Event Listeners for Filters
-function setupToggles() {
-  ['toggle-history', 'toggle-actual', 'toggle-seq2seq', 'toggle-baseline'].forEach((id) => {
-    document.getElementById(id).addEventListener('change', () => {
-      renderChart();
-    });
-  });
-}
-
-// Start
+// Run on DOM ready
 document.addEventListener('DOMContentLoaded', initApp);
